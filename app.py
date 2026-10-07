@@ -1,4 +1,5 @@
 import os
+import time
 import streamlit as st
 from google import genai
 from google.genai import types
@@ -77,11 +78,20 @@ def analyze_resume(api_key: str, resume_text: str, job_description: str) -> str:
     - Suggest an optimized, impactful professional summary tailored to this job description.
     """
 
-    response = client.models.generate_content(
-        model='gemini-3.8-flash',
-        contents=prompt
-    )
-    return response.text
+    # Retry logic for 503 high demand errors
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model='gemini-3.8-flash',
+                contents=prompt
+            )
+            return response.text
+        except Exception as e:
+            if "503" in str(e) and attempt < max_retries - 1:
+                time.sleep(2 * (attempt + 1))  # Wait before retrying
+                continue
+            raise e
 
 # --- Sidebar ---
 with st.sidebar:
@@ -137,7 +147,7 @@ if analyze_btn:
     elif uploaded_file is None:
         st.error("⚠️ Please upload a resume file.")
     else:
-        with st.spinner("🔍 Scanning resume and analyzing with Gemini Flash..."):
+        with st.spinner("🔍 Scanning resume and analyzing with Gemini Flash (auto-retrying if busy)..."):
             try:
                 if uploaded_file.type == "application/pdf":
                     resume_text = extract_text_from_pdf(uploaded_file)
