@@ -77,7 +77,7 @@ def analyze_resume(api_key: str, resume_text: str, job_description: str) -> str:
     """
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="gpt-oss-120b",
         messages=[
             {"role": "system", "content": "You are a professional technical recruiter and ATS expert."},
             {"role": "user", "content": prompt}
@@ -104,7 +104,7 @@ with st.sidebar:
 
 # --- Main Interface ---
 st.markdown('<div class="main-header">📄 AI ATS Resume Analyzer (Groq)</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Optimize your resume against specific job descriptions using Groq and Llama 3.3.</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Optimize your resume against specific job descriptions using Groq.</div>', unsafe_allow_html=True)
 
 col1, col2 = st.columns([1, 1], gap="large")
 
