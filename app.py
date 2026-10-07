@@ -1,8 +1,6 @@
 import os
-import time
 import streamlit as st
-from google import genai
-from google.genai import types
+from groq import Groq
 import pypdf
 from docx import Document
 
@@ -48,7 +46,7 @@ def extract_text_from_docx(uploaded_file) -> str:
     return text
 
 def analyze_resume(api_key: str, resume_text: str, job_description: str) -> str:
-    client = genai.Client(api_key=api_key)
+    client = Groq(api_key=api_key)
     
     prompt = f"""
     You are an expert ATS (Applicant Tracking System) scanner, career coach, and professional technical recruiter.
@@ -78,20 +76,15 @@ def analyze_resume(api_key: str, resume_text: str, job_description: str) -> str:
     - Suggest an optimized, impactful professional summary tailored to this job description.
     """
 
-    # Retry logic for resilience
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            response = client.models.generate_content(
-                model='gemini-3.5-flash',
-                contents=prompt
-            )
-            return response.text
-        except Exception as e:
-            if "503" in str(e) and attempt < max_retries - 1:
-                time.sleep(2 * (attempt + 1))
-                continue
-            raise e
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": "You are a professional technical recruiter and ATS expert."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.3
+    )
+    return response.choices[0].message.content
 
 # --- Sidebar ---
 with st.sidebar:
@@ -99,9 +92,9 @@ with st.sidebar:
     st.title("Configuration")
     
     api_key_input = st.text_input(
-        "Enter Google Gemini API Key", 
+        "Enter Groq API Key", 
         type="password", 
-        help="Get your free API key from Google AI Studio."
+        help="Get your free API key from console.groq.com."
     )
     
     st.markdown("---")
@@ -110,8 +103,8 @@ with st.sidebar:
     st.markdown("- Paste the complete job description including requirements.")
 
 # --- Main Interface ---
-st.markdown('<div class="main-header">📄 AI ATS Resume Analyzer</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Optimize your resume against specific job descriptions using Google Gemini Flash.</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">📄 AI ATS Resume Analyzer (Groq)</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Optimize your resume against specific job descriptions using Groq and Llama 3.3.</div>', unsafe_allow_html=True)
 
 col1, col2 = st.columns([1, 1], gap="large")
 
@@ -137,17 +130,17 @@ with col2:
 
 st.markdown("---")
 
-analyze_btn = st.button("🚀 Analyze Resume with AI", type="primary", use_container_width=True)
+analyze_btn = st.button("🚀 Analyze Resume with Groq", type="primary", use_container_width=True)
 
 if analyze_btn:
     if not api_key_input:
-        st.error("⚠️ Please enter your Google Gemini API Key in the sidebar.")
+        st.error("⚠️ Please enter your Groq API Key in the sidebar.")
     elif not job_description.strip():
         st.error("⚠️ Please provide a target job description.")
     elif uploaded_file is None:
         st.error("⚠️ Please upload a resume file.")
     else:
-        with st.spinner("🔍 Scanning resume and analyzing with Gemini 3.5 Flash..."):
+        with st.spinner("🔍 Scanning resume and analyzing with Groq..."):
             try:
                 if uploaded_file.type == "application/pdf":
                     resume_text = extract_text_from_pdf(uploaded_file)
