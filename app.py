@@ -78,18 +78,18 @@ def analyze_resume(api_key: str, resume_text: str, job_description: str) -> str:
     - Suggest an optimized, impactful professional summary tailored to this job description.
     """
 
-    # Retry logic for 503 high demand errors
+    # Retry logic for resilience
     max_retries = 3
     for attempt in range(max_retries):
         try:
             response = client.models.generate_content(
-                model='gemini-3.8-flash',
+                model='gemini-3.5-flash',
                 contents=prompt
             )
             return response.text
         except Exception as e:
             if "503" in str(e) and attempt < max_retries - 1:
-                time.sleep(2 * (attempt + 1))  # Wait before retrying
+                time.sleep(2 * (attempt + 1))
                 continue
             raise e
 
@@ -147,7 +147,7 @@ if analyze_btn:
     elif uploaded_file is None:
         st.error("⚠️ Please upload a resume file.")
     else:
-        with st.spinner("🔍 Scanning resume and analyzing with Gemini Flash (auto-retrying if busy)..."):
+        with st.spinner("🔍 Scanning resume and analyzing with Gemini 3.5 Flash..."):
             try:
                 if uploaded_file.type == "application/pdf":
                     resume_text = extract_text_from_pdf(uploaded_file)
